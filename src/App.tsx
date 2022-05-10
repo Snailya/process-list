@@ -11,6 +11,29 @@ import { ProcessNode } from './ProcessNode';
 import { ReactShape } from '@antv/x6-react-shape';
 import { EdgeData, NodeData } from './data';
 
+function renderNodes(nodes: Node[]) {
+  for (let node of nodes) {
+    let reactNode = node as ReactShape;
+    if (reactNode) {
+      if (reactNode.getComponent()) {
+        reactNode.removeComponent();
+      }
+      reactNode.setComponent(<ProcessNode node={reactNode} />);
+    }
+  }
+}
+
+function renderEdge(edge: Edge) {
+  const data = edge.data as EdgeData;
+  edge.setLabels([{
+    attrs: { 
+      label: { 
+        text: `${data.source.name}-->${data.target.name}: ${data.value}`,
+      } 
+    },
+  }]);
+}
+
 enum EditorMode {
   Node = "node",
   Edge = "edge",
@@ -26,8 +49,7 @@ function App() {
 
   const handleNodeSubmit = React.useCallback((node: Node) => {
     setVisible(false);
-    const reactNode = node as ReactShape;
-    reactNode.setComponent(<ProcessNode graph={graphRef.current!} node={reactNode} />);
+    renderNodes([node]);
     if (!graphRef.current?.hasCell(node)) {
       graphRef.current?.addNode(node);
     }
@@ -35,14 +57,7 @@ function App() {
 
   const handleEdgeSubmit = React.useCallback((edge: Edge) => {
     setVisible(false);
-    const data = edge.data as EdgeData;
-    edge.setLabels([{
-      attrs: { 
-        label: { 
-          text: `${data.source.name}-->${data.target.name}: ${data.value}`,
-        } 
-      },
-    }]);
+    renderEdge(edge);
   }, []);
 
   const handleExport = React.useCallback(() => {
@@ -70,6 +85,7 @@ function App() {
         },
       });
 
+      // create node
       graphRef.current.on("blank:dblclick", (args) => {
         const node = new ReactShape({
           x: args.x,
@@ -125,37 +141,86 @@ function App() {
         setVisible(true);
       });
 
+      // edit node
       graphRef.current.on("node:dblclick", (args) => {
         setNode(args.node);
         setMode(EditorMode.Node);
         setVisible(true);
       });
 
+      graphRef.current.on("node:change:data", (args) => {
+        console.log("trigger node change data");
+        const inputs = args.node.model?.getIncomingEdges(args.node);
+        if (inputs) {
+          for (let edge of inputs) {
+            const data = edge.data as EdgeData;
+            edge.updateData({
+              ...data,
+              target: {
+                id: args.node.id,
+                name: args.node.data.name
+              }
+            });
+          }
+        }
+
+        const outputs = args.node.model?.getOutgoingEdges(args.node);
+        if (outputs) {
+          for (let edge of outputs) {
+            const data = edge.data as EdgeData;
+            edge.updateData({
+              ...data,
+              source: {
+                id: args.node.id,
+                name: args.node.data.name
+              }
+            });
+          }
+        }
+      });
+
+      // todo: delete node
+      graphRef.current.on("node:removed", (args) => {
+
+      });
+
+      // create edge
+      graphRef.current.on("edge:connected", (args) => {
+        if (args.isNew) {
+          const data: EdgeData = {
+            value: 0,
+            source: {
+              id: args.edge.getSourceCellId(),
+              name: (args.edge.getSourceNode()?.data as NodeData).name
+            },
+            target: {
+              id: args.edge.getTargetCellId(),
+              name: (args.edge.getTargetNode()?.data as NodeData).name
+            }
+          }
+          args.edge.updateData(data);
+        }
+      });
+
+      // edit edge
       graphRef.current.on("edge:dblclick", (args) => {
         setEdge(args.edge);
         setMode(EditorMode.Edge);
         setVisible(true);
-      })
+      });
 
-      graphRef.current.on("edge:connected", (args) => {
-        const data: EdgeData = {
-          value: 0,
-          source: {
-            id: args.edge.getSourceCellId(),
-            name: (args.edge.getSourceNode()?.data as NodeData).name
-          },
-          target: {
-            id: args.edge.getTargetCellId(),
-            name: (args.edge.getTargetNode()?.data as NodeData).name
-          }
-        }
-        args.edge.updateData(data);
-
+      graphRef.current.on("edge:change:data", (args) => {
         // force update node
-      })
+        renderNodes([
+          args.edge.getSourceNode()!, 
+          args.edge.getTargetNode()!,
+        ]);
+        renderEdge(args.edge);
+      });
 
+      // delete edge
       graphRef.current.on("edge:removed", (args) => {
-
+        renderNodes([args.edge.getSourceNode()!, args.edge.getTargetNode()!]);
       });
     }
   }, [])
@@ -179,9 +244,7 @@ function App() {
             />
           )
         }
-
       </Drawer>
-      
     </div>
   );
 }

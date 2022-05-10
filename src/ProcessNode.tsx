@@ -1,11 +1,9 @@
 import React from "react";
 import { ReactShape } from '@antv/x6-react-shape';
 import { Card, Col, Row, Table,  } from "antd";
-import { Graph } from '@antv/x6';
 import { EdgeData, NodeData } from "./data";
 
 export interface ProcessNodeProps {
-  graph: Graph,
   node: ReactShape;
 }
 
@@ -21,22 +19,22 @@ const columns = [{
 
 export function ProcessNode(props:ProcessNodeProps) {
   const title = (props.node.data as NodeData).name;
-  let inputs = props.graph.getIncomingEdges(props.node.id)?.map(edge => {
+  let inputs = props.node.model?.getIncomingEdges(props.node.id)?.map(edge => {
     const data = edge.data as EdgeData;
     return {
       id: data.source.id,
       name: data.source.name,
       value: data.value,
     }
-  })
-  let outputs = props.graph.getOutgoingEdges(props.node.id)?.map(edge => {
+  });
+  let outputs = props.node.model?.getOutgoingEdges(props.node.id)?.map(edge => {
     const data = edge.data as EdgeData;
     return {
       id: data.target.id,
       name: data.target.name,
       value: data.value,
     }
-  })
+  });
 
   return (
     <Card title={title} headStyle={{textAlign:"center"}} bodyStyle={{padding:0}}>

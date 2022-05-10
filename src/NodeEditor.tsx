@@ -31,8 +31,12 @@ export function NodeEditor(props: NodeEditorProps) {
   })
 
   const handleFinish = () => {
-    let node = props.node.updateData({name: form.getFieldValue("name")});
-    props.onSubmit(node);
+    const data = {
+      ...props.node.data,
+      name: form.getFieldValue("name"),
+    }
+    props.node.updateData(data);
+    props.onSubmit(props.node);
   };
 
   return (

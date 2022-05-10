@@ -37,8 +37,12 @@ export function EdgeEditor(props: EdgeEditorProps) {
   })
   
   const handleFinish = () => {
-    let edge = props.edge.updateData({value: form.getFieldValue("value")});
-    props.onSubmit(edge);
+    const data = {
+      ...props.edge.data,
+      value: form.getFieldValue("value"),
+    }
+    props.edge.updateData(data);
+    props.onSubmit(props.edge);
   };
 
   return (
