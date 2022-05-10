@@ -1,16 +1,53 @@
 import React from "react";
 import { ReactShape } from '@antv/x6-react-shape';
-import { Card,  } from "antd";
+import { Card, Col, Row, Table,  } from "antd";
+import { Graph } from '@antv/x6';
+import { EdgeData, NodeData } from "./data";
 
 export interface ProcessNodeProps {
-  node?: ReactShape;
-  title?: string;
+  graph: Graph,
+  node: ReactShape;
 }
 
+const columns = [{
+  title: "Node",
+  dataIndex: 'name',
+  key: "name",
+}, {
+  title: "Value",
+  dataIndex: 'value',
+  key: "value"
+}];
+
 export function ProcessNode(props:ProcessNodeProps) {
+  const title = (props.node.data as NodeData).name;
+  let inputs = props.graph.getIncomingEdges(props.node.id)?.map(edge => {
+    const data = edge.data as EdgeData;
+    return {
+      id: data.source.id,
+      name: data.source.name,
+      value: data.value,
+    }
+  })
+  let outputs = props.graph.getOutgoingEdges(props.node.id)?.map(edge => {
+    const data = edge.data as EdgeData;
+    return {
+      id: data.target.id,
+      name: data.target.name,
+      value: data.value,
+    }
+  })
+
   return (
-    <Card title={props.title} headStyle={{textAlign:"center"}}>
+    <Card title={title} headStyle={{textAlign:"center"}} bodyStyle={{padding:0}}>
+      <Row gutter={8}>
+        <Col span={12}>
+          <Table dataSource={inputs} columns={columns} size="small" pagination={false}/>
+        </Col>
+        <Col span={12}>
+          <Table dataSource={outputs} columns={columns} size="small" pagination={false}/>
+        </Col>
+      </Row>
     </Card>
   )
-  
 }

@@ -9,6 +9,7 @@ import '@antv/x6-react-components/es/menubar/style/index.css';
 import { EdgeEditor } from './EdgeEditor';
 import { ProcessNode } from './ProcessNode';
 import { ReactShape } from '@antv/x6-react-shape';
+import { EdgeData, NodeData } from './data';
 
 enum EditorMode {
   Node = "node",
@@ -25,7 +26,8 @@ function App() {
 
   const handleNodeSubmit = React.useCallback((node: Node) => {
     setVisible(false);
-    (node as ReactShape).setComponent(<ProcessNode title={node.data.name}/>);
+    const reactNode = node as ReactShape;
+    reactNode.setComponent(<ProcessNode graph={graphRef.current!} node={reactNode} />);
     if (!graphRef.current?.hasCell(node)) {
       graphRef.current?.addNode(node);
     }
@@ -33,10 +35,11 @@ function App() {
 
   const handleEdgeSubmit = React.useCallback((edge: Edge) => {
     setVisible(false);
+    const data = edge.data as EdgeData;
     edge.setLabels([{
       attrs: { 
         label: { 
-          text: edge.data.value,
+          text: `${data.source.name}-->${data.target.name}: ${data.value}`,
         } 
       },
     }]);
@@ -64,7 +67,7 @@ function App() {
           router: {
             name: "manhattan",
           }
-        }
+        },
       });
 
       graphRef.current.on("blank:dblclick", (args) => {
@@ -74,9 +77,6 @@ function App() {
           width: 300,
           height: 80,
           shape: "react-shape",
-          data: {
-            name: "SampleNode",
-          },
           ports: {
             groups: {
               in: {
@@ -136,6 +136,27 @@ function App() {
         setMode(EditorMode.Edge);
         setVisible(true);
       })
+
+      graphRef.current.on("edge:connected", (args) => {
+        const data: EdgeData = {
+          value: 0,
+          source: {
+            id: args.edge.getSourceCellId(),
+            name: (args.edge.getSourceNode()?.data as NodeData).name
+          },
+          target: {
+            id: args.edge.getTargetCellId(),
+            name: (args.edge.getTargetNode()?.data as NodeData).name
+          }
+        }
+        args.edge.updateData(data);
+
+        // force update node
+      })
+
+      graphRef.current.on("edge:removed", (args) => {
+
+      });
     }
   }, [])
 
@@ -144,6 +165,7 @@ function App() {
       <Button onClick={handleExport}>Export</Button>
       <div style={{height:"100vh"}} ref={containerRef} />
       <Drawer visible={visible} placement="right"
+        title={mode === EditorMode.Node? "Node Editor": "Edge Editor"}
         onClose={() => setVisible(false)}> 
         {mode === EditorMode.Node ? (      
             <NodeEditor node={node} 

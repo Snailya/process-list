@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, Form, Input, InputNumber, Space } from 'antd';
 import { Node } from "@antv/x6";
+import { NodeData } from './data';
 
 export interface NodeEditorProps {
   node: Node,
@@ -12,9 +13,20 @@ export function NodeEditor(props: NodeEditorProps) {
   const [form] = Form.useForm();
 
   React.useEffect(() => {
+    // set initial value if no data
+    if (!props.node.data) {
+      const data: NodeData = {
+        id: props.node.id,
+        name: "SampleNode",
+      };
+      props.node.setData(data);
+    }
+    
+    const data = props.node.data as NodeData;
     form.setFieldsValue({
-      name: props.node.data.name,
-      position: props.node.getPosition()
+      id: data.id,
+      name: data.name,
+      position: props.node.getPosition(),
     });
   })
 
@@ -28,6 +40,9 @@ export function NodeEditor(props: NodeEditorProps) {
       form={form} 
       onFinish={handleFinish}
     >
+      <Form.Item label="Id:" name="id">
+        <Input disabled/>
+      </Form.Item>
       <Form.Item label="Name:" name="name">
         <Input />
       </Form.Item>
