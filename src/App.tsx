@@ -81,7 +81,7 @@ function App() {
               in: {
                 position: "left",
                 label: {
-                  position: "left",
+                  position: "inside",
                 },
                 attrs: {
                   circle: {
@@ -93,7 +93,7 @@ function App() {
               out: {
                 position: "right",
                 label: {
-                  position: "right",
+                  position: "inside",
                 },
                 attrs: {
                   circle: {
