@@ -1,9 +1,11 @@
 import React from 'react';
 import './App.css';
 import 'antd/dist/antd.css'
-import { Drawer } from 'antd';
+import { Button, Drawer } from 'antd';
 import { NodeEditor } from './NodeEditor';
-import { Graph, Shape, Node } from '@antv/x6';
+import { Graph, Shape, Node, DataUri } from '@antv/x6';
+import '@antv/x6-react-components/es/menu/style/index.css';
+import '@antv/x6-react-components/es/menubar/style/index.css';
 
 function App() {
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -16,6 +18,12 @@ function App() {
     if (!graphRef.current?.hasCell(node)) {
       graphRef.current?.addNode(node);
     }
+  }, []);
+
+  const handleExport = React.useCallback(() => {
+      graphRef.current!.toPNG((dataUri: string) => {
+        DataUri.downloadDataUri(dataUri, 'process-list.png');
+    })
   }, []);
 
   React.useEffect(() => {
@@ -50,6 +58,7 @@ function App() {
 
   return (
     <div>
+      <Button onClick={handleExport}>Export</Button>
       <div style={{height:"100vh"}} ref={containerRef} />
       <Drawer visible={visible} placement="right"
         onClose={() => setVisible(false)}>
