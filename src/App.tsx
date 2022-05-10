@@ -60,6 +60,9 @@ function App() {
           allowMulti: false,
           allowPort: true,
           allowNode: false,
+          router: {
+            name: "manhattan",
+          }
         }
       });
 
