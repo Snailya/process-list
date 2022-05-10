@@ -14,6 +14,8 @@ function App() {
   const [node, setNode] = React.useState<Node>(new Shape.Rect());
 
   const handleSubmit = React.useCallback((node: Node) => {
+    setVisible(false);
+    
     node.setAttrByPath("label/text", node.data.name);
     if (!graphRef.current?.hasCell(node)) {
       graphRef.current?.addNode(node);
