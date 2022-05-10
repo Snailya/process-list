@@ -43,7 +43,17 @@ function App() {
           shape: "rect",
           data: {
             name: "SampleNode"
-          }
+          },
+          tools: [
+            {
+              name: 'button-remove',
+              args: {
+                x: '100%',
+                y: 0,
+                offset: { x: -10, y: 10 },
+              },
+            },
+          ],
         });
         setNode(rect);
         setVisible(true);
