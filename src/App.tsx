@@ -15,7 +15,7 @@ function App() {
 
   const handleSubmit = React.useCallback((node: Node) => {
     setVisible(false);
-    
+
     node.setAttrByPath("label/text", node.data.name);
     if (!graphRef.current?.hasCell(node)) {
       graphRef.current?.addNode(node);
@@ -34,17 +34,70 @@ function App() {
         container: containerRef.current!,
         grid: true,
         height: containerRef.current.offsetHeight,
+        connecting: {
+          allowBlank: false,
+          allowEdge: false,
+          allowLoop: false,
+          allowMulti: false,
+          allowPort: true,
+          allowNode: false,
+        }
       });
 
       graphRef.current.on("blank:dblclick", (args) => {
         const rect = new Shape.Rect({
           x: args.x,
           y: args.y,
-          width: 80,
-          height: 40,
+          width: 160,
+          height: 80,
           shape: "rect",
           data: {
             name: "SampleNode"
+          },
+          ports: {
+            groups: {
+              in: {
+                position: "left",
+                label: {
+                  position: "left",
+                },
+                attrs: {
+                  circle: {
+                    stroke: '#31d0c6',
+                    magnet: true,
+                  }
+                },
+              },
+              out: {
+                position: "right",
+                label: {
+                  position: "right",
+                },
+                attrs: {
+                  circle: {
+                    stroke: '#31d0c6',
+                    magnet: true,
+                  }
+                },
+              }
+            },
+            items: [{
+              id: "inputs",
+              group: "in",
+              attrs: {
+                text: { 
+                  text: "inputs",
+                },
+              },
+            }, {
+              id: "outputs",
+              group: "out",
+              attrs: {
+                text: { 
+                  text: 'outputs',
+                },
+              },
+            }]
           },
           tools: [
             {
