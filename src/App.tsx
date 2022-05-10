@@ -3,34 +3,20 @@ import './App.css';
 import 'antd/dist/antd.css'
 import { Drawer } from 'antd';
 import { NodeEditor } from './NodeEditor';
-import { Graph } from '@antv/x6';
+import { Graph, Shape, Node } from '@antv/x6';
 
 function App() {
-  const [visible, setVisible] = React.useState<boolean>(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
-  // initial value
-  const [config, setConfig] = React.useState({
-    name: "TestNode",
-    position: {
-      x: 100,
-      y: 100
-    }
-  });
-
   const graphRef = React.useRef<Graph>();
-  const handleSubmit = React.useCallback((cfg: any) => {
-    console.log(cfg);
-    graphRef.current?.addNode({
-      ...cfg,
-      shape: "rect",
-      width: 80,
-      height: 40,
-      label: cfg.name,
-      data: {
-        name: cfg.name
-      }
-    });
-  }, [])
+  const [visible, setVisible] = React.useState<boolean>(false);
+  const [node, setNode] = React.useState<Node>(new Shape.Rect());
+
+  const handleSubmit = React.useCallback((node: Node) => {
+    node.setAttrByPath("label/text", node.data.name);
+    if (!graphRef.current?.hasCell(node)) {
+      graphRef.current?.addNode(node);
+    }
+  }, []);
 
   React.useEffect(() => {
     if (containerRef.current) {
@@ -41,29 +27,33 @@ function App() {
       });
 
       graphRef.current.on("blank:dblclick", (args) => {
-        setConfig({
-          name: "SampleNode", 
-          position: {
-            x: args.x,
-            y: args.y,
-        } });
+        const rect = new Shape.Rect({
+          x: args.x,
+          y: args.y,
+          width: 80,
+          height: 40,
+          shape: "rect",
+          data: {
+            name: "SampleNode"
+          }
+        });
+        setNode(rect);
         setVisible(true);
       })
 
       graphRef.current.on("node:dblclick", (args) => {
-        console.log(args);
-        console.log(args.node.getAttrs());
-        // todo: better to save info into data, then use get data method
+        setNode(args.node);
+        setVisible(true);
       })
     }
   }, [])
 
   return (
     <div>
-      <div style={{height:"100vh"}} ref={containerRef}></div>
+      <div style={{height:"100vh"}} ref={containerRef} />
       <Drawer visible={visible} placement="right"
         onClose={() => setVisible(false)}>
-        <NodeEditor nodeConfig={config} 
+        <NodeEditor node={node} 
           onSubmit={handleSubmit} 
           onCancel={() => setVisible(false)}
           />
