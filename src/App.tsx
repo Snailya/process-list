@@ -7,6 +7,8 @@ import { Graph, Shape, Node, DataUri, Edge } from '@antv/x6';
 import '@antv/x6-react-components/es/menu/style/index.css';
 import '@antv/x6-react-components/es/menubar/style/index.css';
 import { EdgeEditor } from './EdgeEditor';
+import { ProcessNode } from './ProcessNode';
+import { ReactShape } from '@antv/x6-react-shape';
 
 enum EditorMode {
   Node = "node",
@@ -18,13 +20,12 @@ function App() {
   const graphRef = React.useRef<Graph>();
   const [visible, setVisible] = React.useState<boolean>(false);
   const [mode, setMode] = React.useState<EditorMode>();
-  const [node, setNode] = React.useState<Node>(new Shape.Rect());
+  const [node, setNode] = React.useState<Node>(new Shape.Empty());
   const [edge, setEdge] = React.useState<Edge>(new Shape.Edge());
 
   const handleNodeSubmit = React.useCallback((node: Node) => {
     setVisible(false);
-
-    node.setAttrByPath("label/text", node.data.name);
+    (node as ReactShape).setComponent(<ProcessNode title={node.data.name}/>);
     if (!graphRef.current?.hasCell(node)) {
       graphRef.current?.addNode(node);
     }
@@ -67,12 +68,12 @@ function App() {
       });
 
       graphRef.current.on("blank:dblclick", (args) => {
-        const rect = new Shape.Rect({
+        const node = new ReactShape({
           x: args.x,
           y: args.y,
-          width: 160,
+          width: 300,
           height: 80,
-          shape: "rect",
+          shape: "react-shape",
           data: {
             name: "SampleNode",
           },
@@ -80,9 +81,6 @@ function App() {
             groups: {
               in: {
                 position: "left",
-                label: {
-                  position: "inside",
-                },
                 attrs: {
                   circle: {
                     stroke: '#31d0c6',
@@ -92,9 +90,6 @@ function App() {
               },
               out: {
                 position: "right",
-                label: {
-                  position: "inside",
-                },
                 attrs: {
                   circle: {
                     stroke: '#31d0c6',
@@ -106,19 +101,9 @@ function App() {
             items: [{
               id: "inputs",
               group: "in",
-              attrs: {
-                text: { 
-                  text: "inputs",
-                },
-              },
             }, {
               id: "outputs",
               group: "out",
-              attrs: {
-                text: { 
-                  text: 'outputs',
-                },
-              },
             }]
           },
           tools: [
@@ -135,7 +120,7 @@ function App() {
             },
           ],
         });
-        setNode(rect);
+        setNode(node);
         setMode(EditorMode.Node);
         setVisible(true);
       });
