@@ -3,62 +3,42 @@ import './App.css';
 import 'antd/dist/antd.css'
 import { Button, Drawer } from 'antd';
 import { NodeEditor } from './NodeEditor';
-import { Graph, Shape, Node, DataUri, Edge } from '@antv/x6';
+import { Graph, Node, DataUri, Edge } from '@antv/x6';
 import '@antv/x6-react-components/es/menu/style/index.css';
 import '@antv/x6-react-components/es/menubar/style/index.css';
 import { EdgeEditor } from './EdgeEditor';
 import { ProcessNode } from './ProcessNode';
 import { ReactShape } from '@antv/x6-react-shape';
-import { EdgeData, NodeData } from './data';
+import { createNode, updateEdgeData } from './data';
 
-function forceUpdate(cells: (ReactShape | Node | Edge)[]) {
-  for (let cell of cells) {
-    if (cell instanceof ReactShape) {
-      if (cell.getComponent()) {
-        cell.removeComponent();
-      }
-      cell.setComponent(<ProcessNode node={cell} />);
-    } else if (cell instanceof Node) {
-
-    } else if (cell instanceof Edge) {
-      const data = cell.data as EdgeData;
-      cell.setLabels([{
-        attrs: { 
-          label: { 
-            text: `${data.source.name}-->${data.target.name}: ${data.value}`,
-          } 
-        },
-      }]);
-    }
-
-  }
-}
-
-
-enum EditorMode {
-  Node = "node",
-  Edge = "edge",
+interface ReloadEventArgs {
+  reactShape: ReactShape 
 }
 
 function App() {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const graphRef = React.useRef<Graph>();
-  const [visible, setVisible] = React.useState<boolean>(false);
-  const [mode, setMode] = React.useState<EditorMode>();
-  const [node, setNode] = React.useState<Node>(new Shape.Empty());
-  const [edge, setEdge] = React.useState<Edge>(new Shape.Edge());
+  const [editorModel, setEditorModel] = React.useState<Node | Edge | null>();
 
-  const handleNodeSubmit = React.useCallback((node: Node) => {
-    setVisible(false);
-    forceUpdate([node]);
-    if (!graphRef.current?.hasCell(node)) {
-      graphRef.current?.addNode(node);
+  const makeVisibleIfNew = React.useCallback((reactShape: ReactShape<ReactShape.Properties>) => {
+    if (!graphRef.current?.hasCell(reactShape)) {
+      reactShape.setComponent(<ProcessNode node={reactShape} />);
+      graphRef.current?.addNode(reactShape);
+
+      // // add hooks
+      // reactShape.on("reload", (args:ReloadEventArgs) => {
+      //   args.reactShape.setComponent(<ProcessNode node={args.reactShape} />);
+      // });
     }
   }, []);
 
+  const handleNodeSubmit = React.useCallback((reactShape: ReactShape) => {
+    setEditorModel(null);
+    makeVisibleIfNew(reactShape);
+  }, [makeVisibleIfNew]);
+
   const handleEdgeSubmit = React.useCallback((edge: Edge) => {
-    setVisible(false);
-    forceUpdate([edge]);
+    setEditorModel(null);
   }, []);
 
   const handleExport = React.useCallback(() => {
@@ -71,184 +51,73 @@ function App() {
     if (containerRef.current) {
       graphRef.current = new Graph({
         container: containerRef.current!,
-        grid: true,
         height: containerRef.current.offsetHeight,
+        keyboard: true,
+        mousewheel: {
+          enabled: true,
+          modifiers: ['ctrl', 'meta'],
+        },
         connecting: {
+          router: {name: "manhattan"},
           allowBlank: false,
           allowEdge: false,
           allowLoop: false,
           allowMulti: false,
           allowPort: true,
           allowNode: false,
-          router: {
-            name: "manhattan",
-          }
         },
       });
-
-      // create node
       graphRef.current.on("blank:dblclick", (args) => {
-        const node = new ReactShape({
-          x: args.x,
-          y: args.y,
-          width: 300,
-          height: 80,
-          shape: "react-shape",
-          ports: {
-            groups: {
-              in: {
-                position: "left",
-                attrs: {
-                  circle: {
-                    stroke: '#31d0c6',
-                    magnet: true,
-                  }
-                },
-              },
-              out: {
-                position: "right",
-                attrs: {
-                  circle: {
-                    stroke: '#31d0c6',
-                    magnet: true,
-                  }
-                },
-              }
-            },
-            items: [{
-              id: "inputs",
-              group: "in",
-            }, {
-              id: "outputs",
-              group: "out",
-            }]
-          },
-          tools: [
-            {
-              name: 'button-remove',
-              args: {
-                x: '100%',
-                y: 0,
-                offset: { 
-                  x: -10, 
-                  y: 10,
-                },
-              },
-            },
-          ],
-        });
-        setNode(node);
-        setMode(EditorMode.Node);
-        setVisible(true);
+        setEditorModel(createNode(args.x, args.y));
       });
-
-      // edit node
       graphRef.current.on("node:dblclick", (args) => {
-        setNode(args.node);
-        setMode(EditorMode.Node);
-        setVisible(true);
+        setEditorModel(args.node);
       });
-
-      graphRef.current.on("node:change:data", (args) => {
-        console.log("trigger node change data");
-        const inputs = args.node.model?.getIncomingEdges(args.node);
-        if (inputs) {
-          for (let edge of inputs) {
-            const data = edge.data as EdgeData;
-            edge.updateData({
-              ...data,
-              target: {
-                id: args.node.id,
-                name: args.node.data.name
-              }
-            });
-          }
-        }
-
-        const outputs = args.node.model?.getOutgoingEdges(args.node);
-        if (outputs) {
-          for (let edge of outputs) {
-            const data = edge.data as EdgeData;
-            edge.updateData({
-              ...data,
-              source: {
-                id: args.node.id,
-                name: args.node.data.name
-              }
-            });
-          }
-        }
-      });
-
-      // todo: delete node
-      graphRef.current.on("node:removed", (args) => {
-
-      });
-
-      // create edge
-      graphRef.current.on("edge:connected", (args) => {
-        if (args.isNew) {
-          const data: EdgeData = {
-            value: 0,
-            source: {
-              id: args.edge.getSourceCellId(),
-              name: (args.edge.getSourceNode()?.data as NodeData).name
-            },
-            target: {
-              id: args.edge.getTargetCellId(),
-              name: (args.edge.getTargetNode()?.data as NodeData).name
-            }
-          }
-          args.edge.updateData(data);
-        }
-      });
-
-      // edit edge
       graphRef.current.on("edge:dblclick", (args) => {
-        setEdge(args.edge);
-        setMode(EditorMode.Edge);
-        setVisible(true);
+        setEditorModel(args.edge);
       });
-
-      graphRef.current.on("edge:change:data", (args) => {
-        // force update node
-        forceUpdate([
-          args.edge.getSourceNode()!, 
-          args.edge.getTargetNode()!,
-          args.edge,
-        ]);
+      graphRef.current.on("edge:connected", ({isNew, edge}) => {
+        if (isNew) {
+          updateEdgeData(edge);
+          setEditorModel(edge);
+        }
       });
-
-      // delete edge
-      graphRef.current.on("edge:removed", (args) => {
-        const data = (args.edge.data as EdgeData);
-        const source = graphRef.current?.model.getCell(data.source.id) as Node;
-        const target = graphRef.current?.model.getCell(data.target.id) as Node;
-
-        forceUpdate([source, target]);
+      graphRef.current.on("edge:change:data", ({edge}) => {
+        const fromName = edge.getSourceNode()?.data.name;
+        const toName = edge.getTargetNode()?.data.name;
+        edge.setLabels([`${fromName} -> ${toName}: ${edge.data.flowrate}`])
       });
     }
   }, [])
+
+  let editor: React.ReactNode;
+  let title: string;
+  let visible: boolean;
+  switch (editorModel?.shape) {
+    case "react-shape":
+      title = "Node Editor";
+      editor = (<NodeEditor node={editorModel as ReactShape} onSubmit={handleNodeSubmit} onCancel={() => setEditorModel(null)} />);
+      visible = true;
+      break;
+    case "edge":
+      title = "Edge Editor";
+      editor = (<EdgeEditor edge={editorModel as Edge} onSubmit={handleEdgeSubmit} onCancel={() => setEditorModel(null)} />);
+      visible = true;
+      break;
+    default:
+      title = "";
+      editor = null;
+      visible = false;
+      break;
+  }
 
   return (
     <div>
       <Button onClick={handleExport}>Export</Button>
       <div style={{height:"100vh"}} ref={containerRef} />
-      <Drawer visible={visible} placement="right"
-        title={mode === EditorMode.Node? "Node Editor": "Edge Editor"}
-        onClose={() => setVisible(false)}> 
-        {mode === EditorMode.Node ? (      
-            <NodeEditor node={node} 
-              onSubmit={handleNodeSubmit} 
-              onCancel={() => setVisible(false)}
-            />
-          ): (
-            <EdgeEditor edge={edge} 
-              onSubmit={handleEdgeSubmit}
-              onCancel={() => setVisible(false)}
-            />
-          )
-        }
+      <Drawer placement="right" visible={visible} 
+        title={title} onClose={() => setEditorModel(null)}> 
+        {editor}
       </Drawer>
     </div>
   );

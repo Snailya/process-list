@@ -1,36 +1,30 @@
 import React from 'react';
-import { Button, Form, Input, InputNumber, Space } from 'antd';
-import { Node } from "@antv/x6";
-import { NodeData } from './data';
+import { Button, Descriptions, Divider, Form, Input, Space } from 'antd';
+import { ReactShape } from '@antv/x6-react-shape';
 
 export interface NodeEditorProps {
-  node: Node,
-  onSubmit: (node: Node) => void,
+  node: ReactShape,
+  onSubmit: (node: ReactShape) => void,
   onCancel: () => void,
 }
 
+/**
+ * Node Editor receives a node and returns a modified node after submit. 
+ * Notice that this node might be an orphan node which isn't visible from graph's model.
+ * @param props 
+ * @returns 
+ */
 export function NodeEditor(props: NodeEditorProps) {
   const [form] = Form.useForm();
 
-  React.useEffect(() => {
-    // set initial value if no data
-    if (!props.node.data) {
-      const data: NodeData = {
-        id: props.node.id,
-        name: "SampleNode",
-      };
-      props.node.setData(data);
-    }
-    
-    const data = props.node.data as NodeData;
+  React.useEffect(() => {   
     form.setFieldsValue({
-      id: data.id,
-      name: data.name,
-      position: props.node.getPosition(),
+      name: props.node.data?.name,
     });
   })
 
   const handleFinish = () => {
+    // update node
     const data = {
       ...props.node.data,
       name: form.getFieldValue("name"),
@@ -40,32 +34,26 @@ export function NodeEditor(props: NodeEditorProps) {
   };
 
   return (
-    <Form labelCol={{ span: 8 }} layout="vertical"
-      form={form} 
-      onFinish={handleFinish}
-    >
-      <Form.Item label="Id:" name="id">
-        <Input disabled/>
-      </Form.Item>
-      <Form.Item label="Name:" name="name">
-        <Input />
-      </Form.Item>
-      <Form.Item label="Position:">
-        <Input.Group compact>
-          <Form.Item name={['position', 'x']}>
-            <InputNumber disabled/>
-          </Form.Item>
-          <Form.Item name={['position', 'y']}>
-            <InputNumber disabled/>
-          </Form.Item>
-        </Input.Group>
-      </Form.Item>
-      <Form.Item>
-        <Space>
-          <Button type={'primary'} htmlType="submit">Submit</Button>
-          <Button onClick={props.onCancel}>Cancel</Button>
-        </Space>
-      </Form.Item>
-    </Form>
+    <>
+      <Descriptions title="System Info">
+        <Descriptions.Item label="Id" span={3}>{props.node.id? props.node.id: ""}</Descriptions.Item>
+        <Descriptions.Item label="Position">({props.node.getPosition().x}, {props.node.getPosition().y})</Descriptions.Item>
+      </Descriptions>
+      <Divider />
+      <Form form={form}
+        labelCol={{ span: 8 }} layout="vertical"
+        onFinish={handleFinish}
+      >
+        <Form.Item label="Name:" name="name">
+          <Input />
+        </Form.Item>
+        <Form.Item>
+          <Space>
+            <Button type={'primary'} htmlType="submit">Submit</Button>
+            <Button onClick={props.onCancel}>Cancel</Button>
+          </Space>
+        </Form.Item>
+      </Form>
+    </>
   );
 }

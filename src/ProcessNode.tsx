@@ -21,18 +21,20 @@ export function ProcessNode(props:ProcessNodeProps) {
   const title = (props.node.data as NodeData).name;
   let inputs = props.node.model?.getIncomingEdges(props.node.id)?.map(edge => {
     const data = edge.data as EdgeData;
+    const income = edge.getSourceNode();
     return {
-      id: data.source.id,
-      name: data.source.name,
-      value: data.value,
+      id: data.source,
+      name: income?.data.name,
+      value: data.flowrate
     }
   });
   let outputs = props.node.model?.getOutgoingEdges(props.node.id)?.map(edge => {
     const data = edge.data as EdgeData;
+    const outcoming = edge.getTargetNode();
     return {
-      id: data.target.id,
-      name: data.target.name,
-      value: data.value,
+      id: data.target,
+      name: outcoming?.data.name,
+      value: data.flowrate,
     }
   });
 
