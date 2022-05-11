@@ -11,28 +11,29 @@ import { ProcessNode } from './ProcessNode';
 import { ReactShape } from '@antv/x6-react-shape';
 import { EdgeData, NodeData } from './data';
 
-function renderNodes(nodes: Node[]) {
-  for (let node of nodes) {
-    let reactNode = node as ReactShape;
-    if (reactNode) {
-      if (reactNode.getComponent()) {
-        reactNode.removeComponent();
+function forceUpdate(cells: (ReactShape | Node | Edge)[]) {
+  for (let cell of cells) {
+    if (cell instanceof ReactShape) {
+      if (cell.getComponent()) {
+        cell.removeComponent();
       }
-      reactNode.setComponent(<ProcessNode node={reactNode} />);
+      cell.setComponent(<ProcessNode node={cell} />);
+    } else if (cell instanceof Node) {
+
+    } else if (cell instanceof Edge) {
+      const data = cell.data as EdgeData;
+      cell.setLabels([{
+        attrs: { 
+          label: { 
+            text: `${data.source.name}-->${data.target.name}: ${data.value}`,
+          } 
+        },
+      }]);
     }
+
   }
 }
 
-function renderEdge(edge: Edge) {
-  const data = edge.data as EdgeData;
-  edge.setLabels([{
-    attrs: { 
-      label: { 
-        text: `${data.source.name}-->${data.target.name}: ${data.value}`,
-      } 
-    },
-  }]);
-}
 
 enum EditorMode {
   Node = "node",
@@ -49,7 +50,7 @@ function App() {
 
   const handleNodeSubmit = React.useCallback((node: Node) => {
     setVisible(false);
-    renderNodes([node]);
+    forceUpdate([node]);
     if (!graphRef.current?.hasCell(node)) {
       graphRef.current?.addNode(node);
     }
@@ -57,7 +58,7 @@ function App() {
 
   const handleEdgeSubmit = React.useCallback((edge: Edge) => {
     setVisible(false);
-    renderEdge(edge);
+    forceUpdate([edge]);
   }, []);
 
   const handleExport = React.useCallback(() => {
@@ -211,16 +212,20 @@ function App() {
 
       graphRef.current.on("edge:change:data", (args) => {
         // force update node
-        renderNodes([
+        forceUpdate([
           args.edge.getSourceNode()!, 
           args.edge.getTargetNode()!,
+          args.edge,
         ]);
-        renderEdge(args.edge);
       });
 
       // delete edge
       graphRef.current.on("edge:removed", (args) => {
-        renderNodes([args.edge.getSourceNode()!, args.edge.getTargetNode()!]);
+        const data = (args.edge.data as EdgeData);
+        const source = graphRef.current?.model.getCell(data.source.id) as Node;
+        const target = graphRef.current?.model.getCell(data.target.id) as Node;
+
+        forceUpdate([source, target]);
       });
     }
   }, [])
