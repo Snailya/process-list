@@ -9,7 +9,7 @@ import '@antv/x6-react-components/es/menubar/style/index.css';
 import { EdgeEditor } from './EdgeEditor';
 import { ProcessNode } from './ProcessNode';
 import { ReactShape } from '@antv/x6-react-shape';
-import { createNode, updateEdgeData } from './data';
+import { createNode, updateEdgeData, updateNeighbors, updateNodeData } from './data';
 
 interface ReloadEventArgs {
   reactShape: ReactShape 
@@ -70,11 +70,14 @@ function App() {
       graphRef.current.on("blank:dblclick", (args) => {
         setEditorModel(createNode(args.x, args.y));
       });
-      graphRef.current.on("node:dblclick", (args) => {
-        setEditorModel(args.node);
+      graphRef.current.on("node:dblclick", ({node}) => {
+        setEditorModel(node);
+        node.once("change:data", (args) => {
+          updateNeighbors(args.cell as ReactShape);
+        })
       });
-      graphRef.current.on("edge:dblclick", (args) => {
-        setEditorModel(args.edge);
+      graphRef.current.on("edge:dblclick", ({edge}) => {
+        setEditorModel(edge);
       });
       graphRef.current.on("edge:connected", ({isNew, edge}) => {
         if (isNew) {
@@ -85,7 +88,14 @@ function App() {
       graphRef.current.on("edge:change:data", ({edge}) => {
         const fromName = edge.getSourceNode()?.data.name;
         const toName = edge.getTargetNode()?.data.name;
-        edge.setLabels([`${fromName} -> ${toName}: ${edge.data.flowrate}`])
+        edge.setLabels([`${fromName} -> ${toName}: ${edge.data.flowrate}`]);
+
+        const incoming = edge.getSourceNode();
+        const outcoming = edge.getTargetNode();
+        if (incoming)
+          updateNodeData(incoming);
+        if (outcoming)
+          updateNodeData(outcoming);
       });
     }
   }, [])

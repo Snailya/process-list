@@ -1,5 +1,5 @@
 import { Edge } from "@antv/x6";
-import { Button, Descriptions, Divider, Form, Input, Space } from "antd";
+import { Button, Descriptions, Divider, Form, Input, InputNumber, Space } from "antd";
 import React from "react";
 import { EdgeData, NodeData } from "./data";
 
@@ -49,7 +49,7 @@ export function EdgeEditor(props: EdgeEditorProps) {
         onFinish={handleFinish}
       >
         <Form.Item label="Flowrate:" name="flowrate">
-          <Input />
+          <InputNumber />
         </Form.Item>
         <Form.Item>
           <Space>

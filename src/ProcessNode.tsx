@@ -23,7 +23,7 @@ export function ProcessNode(props:ProcessNodeProps) {
     const data = edge.data as EdgeData;
     const income = edge.getSourceNode();
     return {
-      id: data.source,
+      id: income?.id,
       name: income?.data.name,
       value: data.flowrate
     }
@@ -32,7 +32,7 @@ export function ProcessNode(props:ProcessNodeProps) {
     const data = edge.data as EdgeData;
     const outcoming = edge.getTargetNode();
     return {
-      id: data.target,
+      id: outcoming?.id,
       name: outcoming?.data.name,
       value: data.flowrate,
     }

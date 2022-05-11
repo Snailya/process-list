@@ -1,5 +1,6 @@
-import { Edge } from "@antv/x6";
+import { Node, Edge } from "@antv/x6";
 import { ReactShape } from "@antv/x6-react-shape";
+import { ProcessNode } from "./ProcessNode";
 
 export interface NodeData {
   /**
@@ -51,6 +52,17 @@ export function createNode(x: number, y: number, name?: string) {
   return node;
 }
 
+export function updateNodeData(node: Node) {
+  const model = node.model;
+  const incomings = model?.getIncomingEdges(node);
+  const outcomings = model?.getOutgoingEdges(node);
+  node.setData({
+    ...node.data,
+    incomings: incomings?.map(item => item.getSourceCellId()),
+    outcomings:outcomings?.map(item => item.getTargetCellId()),
+  })
+}
+
 export function updateEdgeData(edge: Edge) {
   edge.setData({
     ...edge.data,
@@ -58,4 +70,20 @@ export function updateEdgeData(edge: Edge) {
     source: edge.getSourceCellId(),
     target: edge.getTargetCellId(),
   });
+}
+
+export function updateNeighbors(node: Node) {
+  const model = node.model;
+  if (model) {
+    const neighbors = model.getNeighbors(node);
+    if (neighbors) {
+      for (let neighbor of neighbors) {
+        const rs = neighbor as ReactShape;
+        if (rs.component) {
+          rs.removeComponent();
+        }
+        rs.setComponent(<ProcessNode node={rs} />);
+      }
+    }
+  }
 }
