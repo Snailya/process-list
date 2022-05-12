@@ -19,7 +19,7 @@ export function NodeEditor(props: NodeEditorProps) {
 
   React.useEffect(() => {   
     form.setFieldsValue({
-      name: props.node.data?.name,
+      name: props.node.data?.name
     });
   })
 
@@ -40,6 +40,9 @@ export function NodeEditor(props: NodeEditorProps) {
         <Descriptions.Item label="Position">({props.node.getPosition().x}, {props.node.getPosition().y})</Descriptions.Item>
       </Descriptions>
       <Divider />
+      <div className="ant-descriptions-header">
+        <div className="ant-descriptions-title">User Data</div>
+      </div>
       <Form form={form}
         labelCol={{ span: 8 }} layout="vertical"
         onFinish={handleFinish}
@@ -54,6 +57,8 @@ export function NodeEditor(props: NodeEditorProps) {
           </Space>
         </Form.Item>
       </Form>
+      <Divider />
+      <Button type={"primary"} danger block disabled>Delete</Button>
     </>
   );
 }

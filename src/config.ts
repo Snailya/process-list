@@ -1,8 +1,7 @@
-import { Cell, Edge, ObjectExt, Shape } from "@antv/x6";
 import { ReactShape } from "@antv/x6-react-shape";
 
 ReactShape.config({
-  width: 300,
+  width: 420,
   height: 80,
   shape: "react-shape",
   ports: {
@@ -14,8 +13,5 @@ ReactShape.config({
       {id: "inputs", group: "in"}, 
       {id: "outputs",group: "out"},
     ]
-  },
-  tools: [
-    {name: 'button-remove', args: {x: "90%", y: "20%"}},
-  ],
+  }
 });

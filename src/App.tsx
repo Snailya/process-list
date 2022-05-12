@@ -9,11 +9,7 @@ import '@antv/x6-react-components/es/menubar/style/index.css';
 import { EdgeEditor } from './EdgeEditor';
 import { ProcessNode } from './ProcessNode';
 import { ReactShape } from '@antv/x6-react-shape';
-import { createNode, updateEdgeData, updateNeighbors, updateNodeData } from './data';
-
-interface ReloadEventArgs {
-  reactShape: ReactShape 
-}
+import { createNode } from './data';
 
 function App() {
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -22,13 +18,8 @@ function App() {
 
   const makeVisibleIfNew = React.useCallback((reactShape: ReactShape<ReactShape.Properties>) => {
     if (!graphRef.current?.hasCell(reactShape)) {
-      reactShape.setComponent(<ProcessNode node={reactShape} />);
+      reactShape.setComponent(<ProcessNode node={reactShape} onClicked={(edge) => setEditorModel(edge)}/>);
       graphRef.current?.addNode(reactShape);
-
-      // // add hooks
-      // reactShape.on("reload", (args:ReloadEventArgs) => {
-      //   args.reactShape.setComponent(<ProcessNode node={args.reactShape} />);
-      // });
     }
   }, []);
 
@@ -41,8 +32,13 @@ function App() {
     setEditorModel(null);
   }, []);
 
+  const handleEdgeDelete = React.useCallback((edge: Edge) => {
+    edge.remove();
+    setEditorModel(null);
+  }, [])
+
   const handleExport = React.useCallback(() => {
-      graphRef.current!.toPNG((dataUri: string) => {
+      graphRef.current?.toPNG((dataUri: string) => {
         DataUri.downloadDataUri(dataUri, 'process-list.png');
     })
   }, []);
@@ -67,36 +63,52 @@ function App() {
           allowNode: false,
         },
       });
-      graphRef.current.on("blank:dblclick", (args) => {
-        setEditorModel(createNode(args.x, args.y));
+      graphRef.current.on("blank:dblclick", ({x, y}) => setEditorModel(createNode(x, y)));
+      graphRef.current.on("node:dblclick", ({node}) => setEditorModel(node));
+      graphRef.current.on("node:change:data", ({node}) => {
+        node.model?.resetCells(node.model.getCells());
       });
-      graphRef.current.on("node:dblclick", ({node}) => {
-        setEditorModel(node);
-        node.once("change:data", (args) => {
-          updateNeighbors(args.cell as ReactShape);
+      graphRef.current.on("edge:connected", ({edge}) => {
+        edge.updateData({
+          ...edge.data,
+          source: edge.getSourceNode(),
+          target: edge.getTargetNode(),
         })
-      });
-      graphRef.current.on("edge:dblclick", ({edge}) => {
+
+        edge.data.source.data.outgoings.push(edge);
+        edge.data.target.data.incomings.push(edge);
+
+        edge.model?.resetCells(edge.model.getCells());
+
         setEditorModel(edge);
       });
-      graphRef.current.on("edge:connected", ({isNew, edge}) => {
-        if (isNew) {
-          updateEdgeData(edge);
-          setEditorModel(edge);
-        }
-      });
+      graphRef.current.on("edge:dblclick", ({edge}) => setEditorModel(edge));
       graphRef.current.on("edge:change:data", ({edge}) => {
-        const fromName = edge.getSourceNode()?.data.name;
-        const toName = edge.getTargetNode()?.data.name;
-        edge.setLabels([`${fromName} -> ${toName}: ${edge.data.flowrate}`]);
-
-        const incoming = edge.getSourceNode();
-        const outcoming = edge.getTargetNode();
-        if (incoming)
-          updateNodeData(incoming);
-        if (outcoming)
-          updateNodeData(outcoming);
+        edge.model?.resetCells(edge.model.getCells());      
       });
+      graphRef.current.on("edge:removed", ({edge}) => {
+        if (edge.data) {
+          if (edge.data.source) {
+            const source = (edge.data.source.data.outgoings).findIndex((item: Edge) => item.id == edge.id);
+            if (source > -1) {
+              edge.data.source.data.outgoings.splice(source, 1); 
+            }
+  
+            const model = edge.data.source.model;
+            model?.resetCells(model.getCells());
+          }
+  
+          if (edge.data.target) {
+            const target = edge.data.target.data.incomings.findIndex((item: Edge) => item.id == edge.id);
+            if (target > -1) {
+                edge.data.target.data.incomings.splice(target, 1); 
+            }
+  
+            const model = edge.data.target.model;
+            model?.resetCells(model.getCells());
+          }
+        }
+      })
     }
   }, [])
 
@@ -111,7 +123,7 @@ function App() {
       break;
     case "edge":
       title = "Edge Editor";
-      editor = (<EdgeEditor edge={editorModel as Edge} onSubmit={handleEdgeSubmit} onCancel={() => setEditorModel(null)} />);
+      editor = (<EdgeEditor edge={editorModel as Edge} onSubmit={handleEdgeSubmit} onCancel={() => setEditorModel(null)} onDelete={handleEdgeDelete}/>);
       visible = true;
       break;
     default:

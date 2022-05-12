@@ -1,12 +1,8 @@
 import { Node, Edge } from "@antv/x6";
 import { ReactShape } from "@antv/x6-react-shape";
-import { ProcessNode } from "./ProcessNode";
 
 export interface NodeData {
-  /**
-   * cell id of the node, used for getting node properties.
-   */
-  id: string;
+  seft: Node;
   /**
    * the readable label displayed on node.
    */
@@ -14,18 +10,15 @@ export interface NodeData {
   /**
    * edges linked with node as inputs, total input value is called by sum edges' value.
    */
-  incomings?: string[];
+  incomings?: Edge[];
   /**
    * edges lined with node as outputs, total output value is called by sum edges' value.
    */
-  outcomings?: string[];
+  outgoings?: Edge[];
 }
 
 export interface EdgeData {
-  /**
-   * cell id of the edge, used for getting edge properties.
-   */
-  id: string,
+  seft: Edge,
   /**
    * business data indicates flowrate.
    */
@@ -33,11 +26,11 @@ export interface EdgeData {
   /**
    * node as source.
    */
-  source: string,
+  source: Node,
   /**
    * node as target.
    */
-  target: string,
+  target: Node,
 }
 
 export function createNode(x: number, y: number, name?: string) {
@@ -46,44 +39,10 @@ export function createNode(x: number, y: number, name?: string) {
     y: y,
   });
   node.setData({
-    id: node.id,
-    data: name? name: "Sample",
+    self: node,
+    name: name? name: "SampleNode",
+    incomings: [],
+    outgoings: [],
   })
   return node;
-}
-
-export function updateNodeData(node: Node) {
-  const model = node.model;
-  const incomings = model?.getIncomingEdges(node);
-  const outcomings = model?.getOutgoingEdges(node);
-  node.setData({
-    ...node.data,
-    incomings: incomings?.map(item => item.getSourceCellId()),
-    outcomings:outcomings?.map(item => item.getTargetCellId()),
-  })
-}
-
-export function updateEdgeData(edge: Edge) {
-  edge.setData({
-    ...edge.data,
-    id: edge.id,
-    source: edge.getSourceCellId(),
-    target: edge.getTargetCellId(),
-  });
-}
-
-export function updateNeighbors(node: Node) {
-  const model = node.model;
-  if (model) {
-    const neighbors = model.getNeighbors(node);
-    if (neighbors) {
-      for (let neighbor of neighbors) {
-        const rs = neighbor as ReactShape;
-        if (rs.component) {
-          rs.removeComponent();
-        }
-        rs.setComponent(<ProcessNode node={rs} />);
-      }
-    }
-  }
 }

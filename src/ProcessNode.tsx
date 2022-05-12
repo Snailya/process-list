@@ -1,51 +1,80 @@
 import React from "react";
 import { ReactShape } from '@antv/x6-react-shape';
-import { Card, Col, Row, Table,  } from "antd";
-import { EdgeData, NodeData } from "./data";
+import { Card, Col, List, Row } from "antd";
+import { Edge } from "@antv/x6";
 
 export interface ProcessNodeProps {
   node: ReactShape;
+  onClicked: (edge: Edge) => void
 }
 
-const columns = [{
-  title: "Node",
-  dataIndex: 'name',
-  key: "name",
-}, {
-  title: "Value",
-  dataIndex: 'value',
-  key: "value"
-}];
-
 export function ProcessNode(props:ProcessNodeProps) {
-  const title = (props.node.data as NodeData).name;
-  let inputs = props.node.model?.getIncomingEdges(props.node.id)?.map(edge => {
-    const data = edge.data as EdgeData;
-    const income = edge.getSourceNode();
-    return {
-      id: income?.id,
-      name: income?.data.name,
-      value: data.flowrate
-    }
-  });
-  let outputs = props.node.model?.getOutgoingEdges(props.node.id)?.map(edge => {
-    const data = edge.data as EdgeData;
-    const outcoming = edge.getTargetNode();
-    return {
-      id: outcoming?.id,
-      name: outcoming?.data.name,
-      value: data.flowrate,
-    }
-  });
+  const name = props.node.data.name;
+  const totalIn = props.node.data.incomings.reduce( (prev: number, curr: Edge) => {
+    return prev + curr.data.flowrate;
+    }, 0);
+  const totalOut = props.node.data.outgoings.reduce( (prev: number, curr: Edge) => {
+    return prev + curr.data.flowrate;
+    }, 0);
 
   return (
-    <Card title={title} headStyle={{textAlign:"center"}} bodyStyle={{padding:0}}>
+    <Card title={name} headStyle={{textAlign:"center"}} bodyStyle={{padding:4}}>
       <Row gutter={8}>
         <Col span={12}>
-          <Table dataSource={inputs} columns={columns} size="small" pagination={false}/>
+          <List dataSource={props.node.data.incomings} size="small"
+                style={{height:"100%"}} split
+                renderItem={(edge: Edge) => (
+                  <List.Item>
+                    <a onClick={() => props.onClicked(edge)}>
+                      <Row>
+                        <Col span={16}>
+                          {edge.data.source.data.name}
+                        </Col>
+                        <Col span={4}>
+                          {edge.data.flowrate} 
+                        </Col>
+                        <Col span={4}>
+                          ({edge.data.flowrate/ totalIn * 100}%)
+                        </Col>
+                      </Row>
+                    </a>
+                  </List.Item>
+                )}
+                header={
+                  <div className="ant-list-item" style={{padding: "0px 16px"}}>
+                    Total: {props.node.data.incomings.reduce( (prev: number, curr: Edge) => {
+                      return prev + curr.data.flowrate;
+                    }, 0)}
+                  </div>
+                }
+                />
         </Col>
         <Col span={12}>
-          <Table dataSource={outputs} columns={columns} size="small" pagination={false}/>
+          <List dataSource={props.node.data.outgoings} size="small"
+                style={{height:"100%"}}
+                renderItem={(edge: Edge) => (
+                  <List.Item>
+                    <a onClick={() => props.onClicked(edge)}>
+                      <Row>
+                        <Col span={16}>
+                          {edge.data.target.data.name}
+                        </Col>
+                        <Col span={4}>
+                          {edge.data.flowrate} 
+                        </Col>
+                        <Col span={4}>
+                          ({(edge.data.flowrate/ totalOut * 100).toFixed(1)}%)
+                        </Col>
+                      </Row>
+                    </a>
+                  </List.Item>
+                )}
+                header={
+                  <div className="ant-list-item" style={{padding: "0px 16px"}}>
+                    Total: {totalOut}
+                  </div>
+                }
+                />
         </Col>
       </Row>
     </Card>
