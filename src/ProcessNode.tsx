@@ -25,16 +25,16 @@ export function ProcessNode(props:ProcessNodeProps) {
                 style={{height:"100%"}} split
                 renderItem={(edge: Edge) => (
                   <List.Item>
-                    <a onClick={() => props.onClicked(edge)}>
+                    <a onClick={() => props.onClicked(edge)} style={{width: "100%"}} >
                       <Row>
-                        <Col span={16}>
+                        <Col span={8}>
                           {edge.data.source.data.name}
                         </Col>
                         <Col span={4}>
                           {edge.data.flowrate} 
                         </Col>
-                        <Col span={4}>
-                          ({edge.data.flowrate/ totalIn * 100}%)
+                        <Col span={12}>
+                          ({(edge.data.flowrate/ totalIn * 100).toFixed(1)} %)
                         </Col>
                       </Row>
                     </a>
@@ -54,16 +54,16 @@ export function ProcessNode(props:ProcessNodeProps) {
                 style={{height:"100%"}}
                 renderItem={(edge: Edge) => (
                   <List.Item>
-                    <a onClick={() => props.onClicked(edge)}>
+                    <a onClick={() => props.onClicked(edge)} style={{width: "100%"}}>
                       <Row>
-                        <Col span={16}>
+                        <Col span={8}>
                           {edge.data.target.data.name}
                         </Col>
                         <Col span={4}>
                           {edge.data.flowrate} 
                         </Col>
-                        <Col span={4}>
-                          ({(edge.data.flowrate/ totalOut * 100).toFixed(1)}%)
+                        <Col span={12}>
+                          ({(edge.data.flowrate/ totalOut * 100).toFixed(1)} %)
                         </Col>
                       </Row>
                     </a>
